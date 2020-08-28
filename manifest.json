@@ -1,0 +1,16 @@
+{
+    "name": "Supercharge Tracker",
+    "version": "1.0",
+    "description": "Track your Tesla Supercharger use.",
+    "manifest_version": 2,
+    "permissions": [
+        "activeTab"
+    ],
+    "content_scripts": [
+        {
+            "matches": ["https://*.tesla.com/*/teslaaccount/payment-history"],
+            "js": ["contentScript.js"]
+        }
+    ],
+    "web_accessible_resources": ["template.html"]
+}
