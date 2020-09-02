@@ -1,16 +1,3 @@
-fetch(chrome.extension.getURL('/template.html'))
-    .then(response => response.text())
-    .then(data => {
-        var appDiv = document.createElement('div');
-        appDiv.classList.add('supercharger-totals');
-        appDiv.innerHTML = data;
-        document.getElementsByClassName('payment-history-wrapper')[0].prepend(appDiv);
-        init();
-    })
-    .catch(err => {
-        console.error(err);
-    })
-
 function getMonth() {
     var dt = new Date();
     var month = dt.getMonth() + 1;
@@ -22,10 +9,18 @@ function getYear() {
     return dt.getFullYear();
 }
 
+/**
+ * Detect currency ($, GBP, Yen, etc).
+ * @returns {string}
+ */
 function detectCurrency() {
     return document.querySelector('.payment-history .tsla-expandable .total-data .section-title--dek' ).innerText.slice(0,1);
 }
 
+/**
+ * Scrape the history page HTML and get charging history.
+ * @returns {array}
+ */
 function scrapeChargeHistory() {
     var charges = [];
     
@@ -65,36 +60,63 @@ function scrapeChargeHistory() {
     return charges;
 }
 
-function calcTotalChargesByMonth(charges, currentMonth, currentYear, currencyType = '$') {
+/**
+ * Calculates total charges for a given month.
+ * @param {array} charges - array of all supercharger visits.
+ * @param {number} month - month to search in.
+ * @param {number} year - year to search in.
+ * @param {string} currencyType - currency symbol.
+ * @returns {object}
+ */
+function calcTotalChargesByMonth(charges, month, year, currencyType = '$') {
     var total = 0;
     var numCharges = 0;
 
     for (var i = 0; i < charges.length; i++) {
         if (
-            charges[i].month === currentMonth &&
-            charges[i].year === currentYear ) {
+            charges[i].month === month &&
+            charges[i].year === year ) {
                 total = currency(total).add(charges[i].amount).value;
                 numCharges++;
             }
     }
 
-    return { total: currency(total).format({ symbol: currencyType }), numCharges: numCharges };
+    return { 
+        total: currency(total).format({ symbol: currencyType }),
+        numCharges: numCharges 
+    };
 }
 
-function calcTotalChargesByYear(charges, currentYear, currencyType = '$') {
+/**
+ * Calculates total charges for a given year.
+ * @param {array} charges - array of all supercharger visits.
+ * @param {number} year - year to search in.
+ * @param {string} currencyType - currency symbol.
+ * @returns {object}
+ */
+function calcTotalChargesByYear(charges, year, currencyType = '$') {
     var total = 0;
     var numCharges = 0;
 
     for (var i = 0; i < charges.length; i++) {
-        if (charges[i].year === currentYear ) {
+        if (charges[i].year === year ) {
             total = currency(total).add(charges[i].amount).value;
             numCharges++;
         }
     }
 
-    return { total: currency(total).format({ symbol: currencyType }), numCharges: numCharges };
+    return { 
+        total: currency(total).format({ symbol: currencyType }),
+        numCharges: numCharges 
+    };
 }
 
+/**
+ * Calculates all time total charges.
+ * @param {array} charges - array of supercharger visits.
+ * @param {string} currencyType - currency symbol.
+ * @returns {object}
+ */
 function calcTotalChargesAllTime(charges, currencyType = '$') {
     var total = 0;
     var numCharges = 0;
@@ -104,19 +126,24 @@ function calcTotalChargesAllTime(charges, currencyType = '$') {
         numCharges++;
     }
 
-    return { total: currency(total).format({ symbol: currencyType }), numCharges: numCharges };
+    return { 
+        total: currency(total).format({ symbol: currencyType }),
+        numCharges: numCharges
+    };
 }
 
+/**
+ * Breaks down charges by month for use with the history chart.
+ * @param {array} charges - array of supercharger visits.
+ * @param {string} currencyType - currency symbol.
+ * @returns {object}
+ */
 function getChartData(charges, currencyType = '$') {
 
     var currMonth, currYear, months = [], amounts = [];
 
     for (var i = 0; i < charges.length; i++) {
 
-        // console.log(charges[i].month);
-        // console.log(charges[i].year);
-        // console.log(charges[i]);
-   
         if ( charges[i].month !== currMonth || charges[i].year !== currYear ) {
             currMonth = charges[i].month;
             currYear = charges[i].year;
@@ -130,26 +157,28 @@ function getChartData(charges, currencyType = '$') {
         }
     }
    
-    return { months: months.reverse(), amounts: amounts.reverse() };
+    // Reverse results so months are displayed oldest to newest.
+    return { 
+        months: months.reverse(), 
+        amounts: amounts.reverse() 
+    };
 }
-
 
 function init() {
 
-    var currencyType = detectCurrency(),
-        charges = scrapeChargeHistory(),
+    var charges = scrapeChargeHistory(),
+        currencyType = detectCurrency(),
         currMonth = getMonth(),
         currYear = getYear();
     
     // Show monthly total.
     var totalChargesThisMonth = calcTotalChargesByMonth(charges, currMonth, currYear, currencyType);
     var totalChargesMonthEl = document.getElementById('total-charges-this-month');
-
     totalChargesMonthEl.querySelector('span').innerText = totalChargesThisMonth.total;
     totalChargesMonthEl.querySelector('small').innerText = totalChargesThisMonth.numCharges + ' charges';
 
     // Show yearly total.
-    var totalChargesThisYear = calcTotalChargesByYear(charges, getYear(), currencyType);
+    var totalChargesThisYear = calcTotalChargesByYear(charges, currYear, currencyType);
     var totalChargesYearEl = document.getElementById('total-charges-this-year');
     totalChargesYearEl.querySelector('span').innerText = totalChargesThisYear.total;
     totalChargesYearEl.querySelector('small').innerText = totalChargesThisYear.numCharges + ' charges';
@@ -161,25 +190,21 @@ function init() {
     totalChargesEl.querySelector('small').innerText = totalCharges.numCharges + ' charges';
 
     // Create history chart.
-    var chart = document.getElementById('chart');
+    var chartEl = document.getElementById('chart');
     var chartData = getChartData(charges, currencyType);
-    var myChart = new Chart(chart, {
+    var chartOptions = {
         type: 'bar',
+        label: '',
         data: {
             labels: chartData.months,
             datasets: [{
+                label: '',
                 data: chartData.amounts
             }]
         },
         options: {
-            tooltips: {
-                enabled: true,
-                callbacks: {
-                    label: function(tooltipItem) {
-                        tooltipItem.yLabel = currency(tooltipItem.yLabel).format({ symbol: currencyType });
-                        return tooltipItem.yLabel;
-                    }
-                }
+            legend: {
+                display: false
             },
             scales: {
                 yAxes: [{
@@ -190,7 +215,31 @@ function init() {
                         }
                     }
                 }]
+            },
+            tooltips: {
+                enabled: true,
+                callbacks: {
+                    label: function(tooltipItem) {
+                        tooltipItem.yLabel = currency(tooltipItem.yLabel).format({ symbol: currencyType });
+                        return tooltipItem.yLabel;
+                    }
+                }
             }
         }
-    })
+    }
+    var myChart = new Chart(chartEl, chartOptions);
 }
+
+// Get template file, insert into Tesla history page, init scraping functions.
+fetch(chrome.extension.getURL('/template.html'))
+    .then(response => response.text())
+    .then(data => {
+        var appDiv = document.createElement('div');
+        appDiv.classList.add('supercharger-totals');
+        appDiv.innerHTML = data;
+        document.getElementsByClassName('payment-history-wrapper')[0].prepend(appDiv);
+        init();
+    })
+    .catch(err => {
+        console.error(err);
+    })
