@@ -65,7 +65,7 @@ function scrapeChargeHistory() {
     return charges;
 }
 
-function calcTotalChargesThisMonth(charges, currentMonth, currentYear, currencyType = '$') {
+function calcTotalChargesByMonth(charges, currentMonth, currentYear, currencyType = '$') {
     var total = 0;
     var numCharges = 0;
 
@@ -81,7 +81,7 @@ function calcTotalChargesThisMonth(charges, currentMonth, currentYear, currencyT
     return { total: currency(total).format({ symbol: currencyType }), numCharges: numCharges };
 }
 
-function calcTotalChargesThisYear(charges, currentYear, currencyType = '$') {
+function calcTotalChargesByYear(charges, currentYear, currencyType = '$') {
     var total = 0;
     var numCharges = 0;
 
@@ -108,26 +108,24 @@ function calcTotalChargesAllTime(charges, currencyType = '$') {
 }
 
 function getChartData(charges, currencyType = '$') {
-    var currMonth, currYear;
-    var months = [];
-    var amounts = [];
 
-    console.log(charges);
+    var currMonth, currYear, months = [], amounts = [];
 
     for (var i = 0; i < charges.length; i++) {
+
+        // console.log(charges[i].month);
+        // console.log(charges[i].year);
+        // console.log(charges[i]);
+   
         if ( charges[i].month !== currMonth || charges[i].year !== currYear ) {
             currMonth = charges[i].month;
             currYear = charges[i].year;
-
-            // console.log(currMonth);
-            // console.log(currYear );
             
-            var formattedMonth = new Date(currYear, currMonth);
+            var formattedMonth = new Date(currYear, currMonth - 1);
             formattedMonth = formattedMonth.toLocaleString('default', { month: 'short'});
-            console.log(`${formattedMonth} ${currYear} ${charges[i].year}`);
             months.push(`${formattedMonth} ${currYear}`);
             
-            var amount = calcTotalChargesThisMonth(charges, currMonth, currYear, currencyType );
+            var amount = calcTotalChargesByMonth(charges, currMonth, currYear, currencyType );
             amounts.push(amount.total.substring(1));
         }
     }
@@ -138,29 +136,29 @@ function getChartData(charges, currencyType = '$') {
 
 function init() {
 
-    var currencyType = detectCurrency();
-    var charges = scrapeChargeHistory();
+    var currencyType = detectCurrency(),
+        charges = scrapeChargeHistory(),
+        currMonth = getMonth(),
+        currYear = getYear();
     
     // Show monthly total.
-    var totalChargesThisMonth = calcTotalChargesThisMonth(charges, getMonth(), getYear(), currencyType);
-    var totalChargesMonthElem = document.getElementById('total-charges-this-month');
-    totalChargesMonthElem.innerText = totalChargesThisMonth.total;
-    var totalChargesMonthElemVisits = document.getElementById('total-charges-this-month--visits');
-    totalChargesMonthElemVisits.innerText = totalChargesThisMonth.numCharges + ' charges';
+    var totalChargesThisMonth = calcTotalChargesByMonth(charges, currMonth, currYear, currencyType);
+    var totalChargesMonthEl = document.getElementById('total-charges-this-month');
+
+    totalChargesMonthEl.querySelector('span').innerText = totalChargesThisMonth.total;
+    totalChargesMonthEl.querySelector('small').innerText = totalChargesThisMonth.numCharges + ' charges';
 
     // Show yearly total.
-    var totalChargesThisYear = calcTotalChargesThisYear(charges, getYear(), currencyType);
-    var totalChargesYearElem = document.getElementById('total-charges-this-year');
-    totalChargesYearElem.innerText = totalChargesThisYear.total;
-    var totalChargesYearElemVisits = document.getElementById('total-charges-this-year--visits');
-    totalChargesYearElemVisits.innerText = totalChargesThisYear.numCharges + ' charges';
+    var totalChargesThisYear = calcTotalChargesByYear(charges, getYear(), currencyType);
+    var totalChargesYearEl = document.getElementById('total-charges-this-year');
+    totalChargesYearEl.querySelector('span').innerText = totalChargesThisYear.total;
+    totalChargesYearEl.querySelector('small').innerText = totalChargesThisYear.numCharges + ' charges';
     
     // Show grand total.
     var totalCharges = calcTotalChargesAllTime(charges, currencyType);
-    var totalChargesElem = document.getElementById('total-charges');
-    totalChargesElem.innerText = totalCharges.total;
-    var totalChargesElemVisits = document.getElementById('total-charges--visits');
-    totalChargesElemVisits.innerText = totalCharges.numCharges + ' charges';
+    var totalChargesEl = document.getElementById('total-charges-all-time');
+    totalChargesEl.querySelector('span').innerText = totalCharges.total;
+    totalChargesEl.querySelector('small').innerText = totalCharges.numCharges + ' charges';
 
     // Create history chart.
     var chart = document.getElementById('chart');
