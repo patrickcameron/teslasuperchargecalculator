@@ -1,10 +1,10 @@
-let currencyType = detectCurrency();
-
 fetch(chrome.extension.getURL('/template.html'))
     .then(response => response.text())
     .then(data => {
-        // var content = document.getElementsByClassName('payment-content')[0].innerHTML;
-        // document.getElementsByClassName('payment-content')[0].innerHTML = data + content;
+        var appDiv = document.createElement('div');
+        appDiv.classList.add('supercharger-totals');
+        appDiv.innerHTML = data;
+        document.getElementsByClassName('payment-history-wrapper')[0].prepend(appDiv);
         init();
     })
     .catch(err => {
@@ -62,48 +62,137 @@ function scrapeChargeHistory() {
         charges.push(data);
     }
 
-    console.log(charges);
-    
     return charges;
 }
 
 function calcTotalChargesThisMonth(charges, currentMonth, currentYear, currencyType = '$') {
     var total = 0;
+    var numCharges = 0;
 
     for (var i = 0; i < charges.length; i++) {
         if (
             charges[i].month === currentMonth &&
             charges[i].year === currentYear ) {
                 total = currency(total).add(charges[i].amount).value;
+                numCharges++;
             }
     }
 
-    return currency(total).format({ symbol: currencyType });
+    return { total: currency(total).format({ symbol: currencyType }), numCharges: numCharges };
+}
+
+function calcTotalChargesThisYear(charges, currentYear, currencyType = '$') {
+    var total = 0;
+    var numCharges = 0;
+
+    for (var i = 0; i < charges.length; i++) {
+        if (charges[i].year === currentYear ) {
+            total = currency(total).add(charges[i].amount).value;
+            numCharges++;
+        }
+    }
+
+    return { total: currency(total).format({ symbol: currencyType }), numCharges: numCharges };
 }
 
 function calcTotalChargesAllTime(charges, currencyType = '$') {
-
     var total = 0;
+    var numCharges = 0;
 
     for (var i = 0; i < charges.length; i++) {
         total = currency(total).add(charges[i].amount).value;
+        numCharges++;
     }
 
-    return currency(total).format({ symbol: currencyType });
+    return { total: currency(total).format({ symbol: currencyType }), numCharges: numCharges };
+}
+
+function getChartData(charges, currencyType = '$') {
+    var currMonth, currYear;
+    var months = [];
+    var amounts = [];
+
+    console.log(charges);
+
+    for (var i = 0; i < charges.length; i++) {
+        if ( charges[i].month !== currMonth || charges[i].year !== currYear ) {
+            currMonth = charges[i].month;
+            currYear = charges[i].year;
+
+            // console.log(currMonth);
+            // console.log(currYear );
+            
+            var formattedMonth = new Date(currYear, currMonth);
+            formattedMonth = formattedMonth.toLocaleString('default', { month: 'short'});
+            console.log(`${formattedMonth} ${currYear} ${charges[i].year}`);
+            months.push(`${formattedMonth} ${currYear}`);
+            
+            var amount = calcTotalChargesThisMonth(charges, currMonth, currYear, currencyType );
+            amounts.push(amount.total.substring(1));
+        }
+    }
+   
+    return { months: months.reverse(), amounts: amounts.reverse() };
 }
 
 
 function init() {
 
+    var currencyType = detectCurrency();
     var charges = scrapeChargeHistory();
     
     // Show monthly total.
     var totalChargesThisMonth = calcTotalChargesThisMonth(charges, getMonth(), getYear(), currencyType);
     var totalChargesMonthElem = document.getElementById('total-charges-this-month');
-    totalChargesMonthElem.innerText = totalChargesThisMonth;
+    totalChargesMonthElem.innerText = totalChargesThisMonth.total;
+    var totalChargesMonthElemVisits = document.getElementById('total-charges-this-month--visits');
+    totalChargesMonthElemVisits.innerText = totalChargesThisMonth.numCharges + ' charges';
+
+    // Show yearly total.
+    var totalChargesThisYear = calcTotalChargesThisYear(charges, getYear(), currencyType);
+    var totalChargesYearElem = document.getElementById('total-charges-this-year');
+    totalChargesYearElem.innerText = totalChargesThisYear.total;
+    var totalChargesYearElemVisits = document.getElementById('total-charges-this-year--visits');
+    totalChargesYearElemVisits.innerText = totalChargesThisYear.numCharges + ' charges';
     
     // Show grand total.
     var totalCharges = calcTotalChargesAllTime(charges, currencyType);
     var totalChargesElem = document.getElementById('total-charges');
-    totalChargesElem.innerText = totalCharges;
+    totalChargesElem.innerText = totalCharges.total;
+    var totalChargesElemVisits = document.getElementById('total-charges--visits');
+    totalChargesElemVisits.innerText = totalCharges.numCharges + ' charges';
+
+    // Create history chart.
+    var chart = document.getElementById('chart');
+    var chartData = getChartData(charges, currencyType);
+    var myChart = new Chart(chart, {
+        type: 'bar',
+        data: {
+            labels: chartData.months,
+            datasets: [{
+                data: chartData.amounts
+            }]
+        },
+        options: {
+            tooltips: {
+                enabled: true,
+                callbacks: {
+                    label: function(tooltipItem) {
+                        tooltipItem.yLabel = currency(tooltipItem.yLabel).format({ symbol: currencyType });
+                        return tooltipItem.yLabel;
+                    }
+                }
+            },
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        // Add currency symbol to numbers on y axis.
+                        callback: function(value) {
+                            return currencyType + value;
+                        }
+                    }
+                }]
+            }
+        }
+    })
 }

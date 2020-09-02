@@ -1,0 +1,21 @@
+.stfc__summary {
+    display: flex;
+    justify-content: space-around;
+    padding: 20px 30px 20px 20px;
+}
+
+.stfc__summary p {
+    padding: 0;
+    text-align: center;
+}
+
+.stfc__summary .stfc-text-large {
+    display: block;
+    font-size: 28px;
+    line-height: 1.8;
+    font-weight: 500;
+}
+.stfc__footer {
+    display: block;
+    margin: 20px 0;
+}

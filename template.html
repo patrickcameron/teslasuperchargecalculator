@@ -1,7 +1,18 @@
-<div class="supercharger-totals">
-    <button class="summary">Home</button>
-    <button class="monthly">Monthly</button>
-    <button class="locations">Locations</button>
-    <p>Total charges (this month): <span id="total-charges-this-month"></span></p>
-    <p>Total charges (all time): <span id="total-charges"></span></p>
+<div class="stfc__summary">
+    <p>Total charges this month:
+        <span class="stfc-text-large" id="total-charges-this-month"></span>
+        <small id="total-charges-this-month--visits"></small>
+    </p>
+    <p>Total charges this year:
+        <span class="stfc-text-large" id="total-charges-this-year"></span>
+        <small id="total-charges-this-year--visits"></small>
+    </p>
+    <p>Total charges all time:
+        <span class="stfc-text-large" id="total-charges"></span>
+        <small id="total-charges--visits"></small>
+    </p>
 </div>
+
+<canvas class="stfc__history" id="chart"></canvas>
+
+<small class="stfc__footer"><em>Supercharger Totals for Chrome</em></small>

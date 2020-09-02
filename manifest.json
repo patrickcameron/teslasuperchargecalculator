@@ -9,7 +9,17 @@
     "content_scripts": [
         {
             "matches": ["https://*.tesla.com/*/teslaaccount/payment-history"],
-            "js": ["/lib/currency.min.js", "/lib/vue.min.js", "contentScript.js"]
+            "css": [
+                "/lib/chart.min.css",
+                "style.css"
+            ],
+            "js": [
+                "/lib/chart.min.js",
+                "/lib/chartjs-plugin-datalabels.min.js",
+                "/lib/currency.min.js",
+                "/lib/vue.min.js",
+                "contentScript.js"
+            ]
         }
     ],
     "web_accessible_resources": ["template.html"]
