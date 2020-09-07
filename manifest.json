@@ -1,11 +1,8 @@
 {
-    "name": "Supercharge Tracker",
+    "name": "Tesla Supercharger Totals for Chrome",
     "version": "1.0",
-    "description": "Track your Tesla Supercharger use.",
+    "description": "A better way to track your Tesla Supercharger costs.",
     "manifest_version": 2,
-    "permissions": [
-        "activeTab"
-    ],
     "content_scripts": [
         {
             "matches": [

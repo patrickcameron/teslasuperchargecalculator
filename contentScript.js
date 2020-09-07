@@ -166,6 +166,10 @@ function getChartData(charges, currencyType = '$') {
 
 function init() {
 
+    // if (!document.querySelector('payment-history-wrapper')) {
+    //     return;
+    // }
+
     var charges = scrapeChargeHistory(),
         currencyType = detectCurrency(),
         currMonth = getMonth(),
