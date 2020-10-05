@@ -1,12 +1,35 @@
-function getMonth() {
-    var dt = new Date();
-    var month = dt.getMonth() + 1;
+/**
+ * Get current month.
+ * @param {object} date - js Date object
+ * @returns {number} month - current month 
+ */
+function getMonth(date) {
+    var month = date.getMonth() + 1;
     return month;
 }
 
-function getYear() {
-    var dt = new Date();
-    return dt.getFullYear();
+/**
+ * Get previous month.
+ * @returns {number} month - current month 
+ */
+function getPrevMonth() {
+    var prevMonthDate = new Date();
+    prevMonthDate.setDate(0); // Sets date back 1 month
+    var prevMonth = { 
+        month: prevMonthDate.getMonth() + 1,
+        year: prevMonthDate.getFullYear()
+    }
+    return prevMonth;
+}
+
+/**
+ * Get current year.
+ * @param {object} date - js Date object
+ * @returns {number} year - current year 
+ */
+function getYear(date) {
+    var year = date.getFullYear()
+    return year;
 }
 
 /**
@@ -63,19 +86,19 @@ function scrapeChargeHistory() {
 /**
  * Calculates total charges for a given month.
  * @param {array} charges - array of all supercharger visits.
- * @param {number} month - month to search in.
+ * @param {object} dateObject - object with 'month' and 'year' properties.
  * @param {number} year - year to search in.
  * @param {string} currencyType - currency symbol.
  * @returns {object}
  */
-function calcTotalChargesByMonth(charges, month, year, currencyType = '$') {
+function calcTotalChargesByMonth(charges, dateObject, currencyType = '$') {
     var total = 0;
     var numCharges = 0;
 
     for (var i = 0; i < charges.length; i++) {
         if (
-            charges[i].month === month &&
-            charges[i].year === year ) {
+            charges[i].month === dateObject.month &&
+            charges[i].year === dateObject.year ) {
                 total = currency(total).add(charges[i].amount).value;
                 numCharges++;
             }
@@ -152,7 +175,7 @@ function getChartData(charges, currencyType = '$') {
             formattedMonth = formattedMonth.toLocaleString('default', { month: 'short'});
             months.push(`${formattedMonth} ${currYear}`);
             
-            var amount = calcTotalChargesByMonth(charges, currMonth, currYear, currencyType );
+            var amount = calcTotalChargesByMonth(charges, { month: currMonth, year: currYear }, currencyType );
             amounts.push(amount.total.substring(1));
         }
     }
@@ -166,18 +189,22 @@ function getChartData(charges, currencyType = '$') {
 
 function init() {
 
-    // if (!document.querySelector('payment-history-wrapper')) {
-    //     return;
-    // }
-
-    var charges = scrapeChargeHistory(),
+    var date = new Date(),
+        charges = scrapeChargeHistory(),
         currencyType = detectCurrency(),
-        currMonth = getMonth(),
-        currYear = getYear();
+        currMonth = getMonth(date),
+        prevMonth = getPrevMonth(),
+        currYear = getYear(date);
     
-    // Show monthly total.
-    var totalChargesThisMonth = calcTotalChargesByMonth(charges, currMonth, currYear, currencyType);
+    // Show this month's total.
+    var totalChargesThisMonth = calcTotalChargesByMonth(charges, { month: currMonth, year: currYear }, currencyType);
     var totalChargesMonthEl = document.getElementById('total-charges-this-month');
+    totalChargesMonthEl.querySelector('span').innerText = totalChargesThisMonth.total;
+    totalChargesMonthEl.querySelector('small').innerText = totalChargesThisMonth.numCharges + ' charges';
+
+    // Show last month's total.
+    var totalChargesThisMonth = calcTotalChargesByMonth(charges, prevMonth, currencyType);
+    var totalChargesMonthEl = document.getElementById('total-charges-last-month');
     totalChargesMonthEl.querySelector('span').innerText = totalChargesThisMonth.total;
     totalChargesMonthEl.querySelector('small').innerText = totalChargesThisMonth.numCharges + ' charges';
 
