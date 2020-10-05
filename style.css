@@ -1,6 +1,7 @@
 .stfc__summary {
     display: flex;
     justify-content: space-around;
+    flex-direction: row;
     padding: 20px 30px 20px 20px;
 }
 
@@ -18,4 +19,15 @@
 .stfc__footer {
     display: block;
     margin: 20px 0;
+}
+
+/* Mobile styling */
+@media only screen and (max-width: 769px) {
+    .stfc__summary {
+        flex-direction: column;
+    }
+
+    .stfc__summary > div:not(:last-of-type) {
+        margin-bottom: 20px;
+    }
 }
